@@ -10,14 +10,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+record ChatMessage(String role, String content, JsonNode tool_calls, String tool_call_id) {
+    ChatMessage(String role, String content) {
+        this(role, content, null, null);
+    }
+}
 
 record JsonSchema(String name, JsonNode schema) {}
 
 record ResponseFormat(String type, JsonSchema json_schema) {}
 
-record ChatMessage(String role, String content) {}
+
 
 record ChatRequest(String model, List<ChatMessage> messages, ResponseFormat response_format, double temperature) {}
 
@@ -29,6 +38,10 @@ record TriageReport(List<PackageFix> fixes) {}
 public class LlmCall {
 
     public static void main(String[] args) throws Exception {
+        System.out.println(ReportReader.cveDetails("CVE-2023-38545"));
+        System.out.println(ReportReader.cveDetails("CVE-1999-9999"));
+        
+        
         Set<String> reportPairs = ReportReader.criticalPairs();
         System.out.println("Report pairs: " + reportPairs.size());
 

@@ -1,3 +1,4 @@
 target/
 trivy-report.json
 .vscode/
+request.http

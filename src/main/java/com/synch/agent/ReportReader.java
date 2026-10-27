@@ -2,18 +2,24 @@ package com.synch.agent;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-
+import java.util.List;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+record CveDetail(String packageName, String installedVersion, String fixedVersion,
+        String severity, String title) {}
+
 public class ReportReader {
+
+    static ObjectMapper mapper = new ObjectMapper();
 
     static JsonNode loadVulnerabilities() throws Exception {
         String text = Files.readString(Path.of("trivy-report.json"));   // 1. full path ("path.of()") ila makansh lfile li baghi tparsi f same folder dial prog
 
-        ObjectMapper mapper = new ObjectMapper();
+        
         JsonNode root = mapper.readTree(text);                    // 2. same as before
 
         JsonNode target = root.get("Results").get(0).get("Vulnerabilities");
@@ -77,4 +83,36 @@ public class ReportReader {
         return nofixpair;
 
     }
+
+    static String cveDetails(String cveid) throws Exception {
+        List<CveDetail> matches = new ArrayList<>();
+
+        for (JsonNode vuln : loadVulnerabilities()) {
+            String vulnid = vuln.get("VulnerabilityID").asString();
+            if (vulnid.equals(cveid)) {
+                String packageName = vuln.get("PkgName").asString();
+                String installedVersion = vuln.get("InstalledVersion").asString();
+                String fixedVersion = null;
+                if(vuln.has("FixedVersion")){
+                    fixedVersion = vuln.get("FixedVersion").asString() ; 
+                }
+                String severity = vuln.get("Severity").asString();
+                String title = null;
+                if(vuln.has("Title")){
+                    title = vuln.get("Title").asString();  
+                }
+
+                matches.add(new CveDetail(packageName, installedVersion, fixedVersion, severity, title));
+
+            }
+
+        }
+        if (matches.isEmpty()) {
+            return "{\"error\": \"CVE not found in this report\"}";
+        }
+
+        String cvedetails = mapper.writeValueAsString(matches);
+        return cvedetails;
+    }
+
 }
